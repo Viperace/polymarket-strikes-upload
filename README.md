@@ -23,15 +23,22 @@ as a downloadable artifact.
 
 ## One-time AWS setup
 
-1. In the AWS console, open **CloudFormation → Create stack → Upload a template
-   file** and pick `aws/github-oidc-s3-role.yaml`.
-   - `BucketName`: your existing bucket.
-   - `Prefix`: folder for the CSVs (default `polymarket_reference`).
-   - `CreateOIDCProvider`: `false` only if IAM → Identity providers already
-     lists `token.actions.githubusercontent.com`.
-   - Tick the IAM acknowledgement and create.
-2. Copy the stack's **Outputs → RoleArn**.
-3. In this repo: **Settings → Secrets and variables → Actions → Variables**,
+1. Quickest: open **AWS CloudShell** (terminal icon in the console's top bar),
+   choose **Actions → Upload file**, upload `aws/setup_cloudshell.sh`, then run:
+
+   ```
+   bash setup_cloudshell.sh <your-bucket> [prefix]
+   ```
+
+   It detects the bucket's region and whether the GitHub identity provider
+   already exists, deploys `aws/github-oidc-s3-role.yaml` as the stack
+   `polymarket-strikes-github`, and prints the four variable values below.
+
+   Console alternative: **CloudFormation → Create stack → Upload a template
+   file** with `aws/github-oidc-s3-role.yaml` (set `CreateOIDCProvider` to
+   `false` if IAM → Identity providers already lists
+   `token.actions.githubusercontent.com`), then copy **Outputs → RoleArn**.
+2. In this repo: **Settings → Secrets and variables → Actions → Variables**,
    add:
 
    | Variable       | Example                                                |
@@ -43,7 +50,7 @@ as a downloadable artifact.
 
    None of these are secrets. The role only allows read/write under that one
    prefix, and only for workflow runs on this repo's `main` branch.
-4. Optional: upload your current local CSVs to the prefix once, so the first
+3. Optional: upload your current local CSVs to the prefix once, so the first
    run doesn't rebuild ETH from scratch:
 
    ```
@@ -51,7 +58,7 @@ as a downloadable artifact.
    aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\btc_5m_strikes.csv" s3://my-bucket/polymarket_reference/
    ```
 
-5. Optional: turn on **bucket versioning** to keep every previous version
+4. Optional: turn on **bucket versioning** to keep every previous version
    (this replaces the notebook's local timestamped backups).
 
 ## Pulling the results locally
