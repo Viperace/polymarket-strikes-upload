@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Strike backfill working files
+data/
+*.tmp
+*.gamma_twap60_checkpoint

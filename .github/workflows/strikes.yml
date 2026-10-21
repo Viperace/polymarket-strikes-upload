@@ -1,0 +1,93 @@
+name: Backfill 5m strikes
+
+# Daily at 00:13 UTC (08:13 Singapore). Also runnable from the Actions tab.
+on:
+  schedule:
+    - cron: "13 0 * * *"
+  workflow_dispatch:
+    inputs:
+      asset_mode:
+        description: "Which underlyings to backfill"
+        type: choice
+        options: [both, btc, eth]
+        default: both
+
+permissions:
+  contents: read
+  id-token: write   # lets the job assume your AWS role without stored keys
+
+concurrency:
+  group: strikes
+  cancel-in-progress: false
+
+env:
+  FILES: "btc_5m_strikes.csv eth_5m_strikes.csv"
+  # Repository variables (Settings > Secrets and variables > Actions > Variables).
+  # Leave AWS_ROLE_ARN unset to run without S3: results then go to the run's artifacts.
+  USE_S3: ${{ vars.AWS_ROLE_ARN != '' }}
+  S3_BUCKET: ${{ vars.S3_BUCKET }}
+  S3_PREFIX: ${{ vars.S3_PREFIX }}
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    # A first run that has to rebuild a whole file from START_DATE takes ~2 h.
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Connect to AWS
+        if: env.USE_S3 == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Load current CSVs (S3, else repo seed)
+        run: bash scripts/load_inputs.sh
+
+      - name: Run notebook
+        env:
+          STRIKES_DIR: ${{ github.workspace }}/data
+          CREATE_BACKUP: "0"
+          ASSET_MODE: ${{ inputs.asset_mode || 'both' }}
+        run: |
+          jupyter nbconvert --to notebook --execute \
+            --ExecutePreprocessor.timeout=12000 \
+            --output "$RUNNER_TEMP/executed.ipynb" \
+            crawl_5m_strike_chainlink_twap60_indicator.ipynb
+
+      - name: Upload CSVs to S3
+        if: env.USE_S3 == 'true'
+        run: bash scripts/upload_outputs.sh
+
+      - name: Run summary
+        if: always()
+        run: python scripts/summary.py data >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep CSVs as run artifact (no-S3 mode)
+        if: env.USE_S3 != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: strikes-csv
+          path: data/*.csv
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Keep executed notebook for debugging
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: executed-notebook
+          path: ${{ runner.temp }}/executed.ipynb
+          retention-days: 14
+          if-no-files-found: ignore
