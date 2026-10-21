@@ -13,7 +13,7 @@ on:
         default: both
 
 permissions:
-  contents: read
+  contents: write   # only for the monthly keep-alive commit
   id-token: write   # lets the job assume your AWS role without stored keys
 
 concurrency:
@@ -22,11 +22,13 @@ concurrency:
 
 env:
   FILES: "btc_5m_strikes.csv eth_5m_strikes.csv"
-  # Repository variables (Settings > Secrets and variables > Actions > Variables).
-  # Leave AWS_ROLE_ARN unset to run without S3: results then go to the run's artifacts.
-  USE_S3: ${{ vars.AWS_ROLE_ARN != '' }}
-  S3_BUCKET: ${{ vars.S3_BUCKET }}
-  S3_PREFIX: ${{ vars.S3_PREFIX }}
+  # AWS_ROLE_ARN and S3_BUCKET are repository *secrets* so they are masked in
+  # the (public) run logs. Without AWS_ROLE_ARN the run skips S3 and attaches
+  # the CSVs to the run as an artifact instead.
+  USE_S3: ${{ secrets.AWS_ROLE_ARN != '' }}
+  S3_BUCKET: ${{ secrets.S3_BUCKET }}
+  S3_PREFIX: ${{ vars.S3_PREFIX || 'db/polymarket/polymarket_reference' }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
 
 jobs:
   backfill:
@@ -49,8 +51,9 @@ jobs:
         if: env.USE_S3 == 'true'
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
 
       - name: Load current CSVs (S3, else repo seed)
         run: bash scripts/load_inputs.sh
@@ -91,3 +94,22 @@ jobs:
           path: ${{ runner.temp }}/executed.ipynb
           retention-days: 14
           if-no-files-found: ignore
+
+      # Public repos pause scheduled workflows after 60 days without repository
+      # activity, so the schedule commits a timestamp roughly once a month.
+      - name: Keep schedule alive
+        if: success() && github.event_name == 'schedule'
+        run: |
+          f=.github/heartbeat
+          last=$(cat "$f" 2>/dev/null || echo 1970-01-01)
+          age_days=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 86400 ))
+          if [ "$age_days" -ge 25 ]; then
+            date -u +%F > "$f"
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add "$f"
+            git commit -m "Keep scheduled workflow active ($(date -u +%F))"
+            git push
+          else
+            echo "Last keep-alive $last ($age_days days ago); nothing to do."
+          fi

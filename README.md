@@ -38,24 +38,25 @@ as a downloadable artifact.
    file** with `aws/github-oidc-s3-role.yaml` (set `CreateOIDCProvider` to
    `false` if IAM → Identity providers already lists
    `token.actions.githubusercontent.com`), then copy **Outputs → RoleArn**.
-2. In this repo: **Settings → Secrets and variables → Actions → Variables**,
-   add:
+2. In this repo: **Settings → Secrets and variables → Actions → Secrets → New
+   repository secret**, add two secrets (secrets are masked in the public logs):
 
-   | Variable       | Example                                                |
-   |----------------|--------------------------------------------------------|
-   | `AWS_ROLE_ARN` | `arn:aws:iam::123456789012:role/github-polymarket-strikes` |
-   | `AWS_REGION`   | `ap-southeast-1`                                       |
-   | `S3_BUCKET`    | `my-bucket`                                            |
-   | `S3_PREFIX`    | `polymarket_reference` (same as the stack's `Prefix`)  |
+   | Secret         | Value                                                    |
+   |----------------|----------------------------------------------------------|
+   | `AWS_ROLE_ARN` | the stack's `RoleArn`                                    |
+   | `S3_BUCKET`    | your bucket name                                         |
 
-   None of these are secrets. The role only allows read/write under that one
-   prefix, and only for workflow runs on this repo's `main` branch.
+   Region and folder default to `ap-northeast-2` and
+   `db/polymarket/polymarket_reference`. Override them with the repository
+   *variables* `AWS_REGION` / `S3_PREFIX` if needed (the stack's `Prefix` must
+   match). The role only allows read/write under that one prefix, and only for
+   workflow runs on this repo's `main` branch.
 3. Optional: upload your current local CSVs to the prefix once, so the first
    run doesn't rebuild ETH from scratch:
 
    ```
-   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\eth_5m_strikes.csv" s3://my-bucket/polymarket_reference/
-   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\btc_5m_strikes.csv" s3://my-bucket/polymarket_reference/
+   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\eth_5m_strikes.csv" s3://my-bucket/db/polymarket/polymarket_reference/
+   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\btc_5m_strikes.csv" s3://my-bucket/db/polymarket/polymarket_reference/
    ```
 
 4. Optional: turn on **bucket versioning** to keep every previous version
@@ -64,10 +65,12 @@ as a downloadable artifact.
 ## Pulling the results locally
 
 ```
-aws s3 sync s3://my-bucket/polymarket_reference/ "C:\Wealth Project\db\polymarket\polymarket_reference" --exclude "*" --include "*_5m_strikes.csv"
+aws s3 sync s3://my-bucket/db/polymarket/polymarket_reference/ "C:\Wealth Project\db\polymarket\polymarket_reference" --exclude "*" --include "*_5m_strikes.csv"
 ```
 
 ## Cost
 
-GitHub's free plan includes 2,000 Actions minutes a month for private repos. A
-daily run takes a few minutes. S3 storage for two ~25 MB files is negligible.
+The repo is public, so GitHub Actions minutes are free and unmetered. Public
+repos pause scheduled workflows after 60 idle days; the workflow commits
+`.github/heartbeat` about once a month to prevent that. S3 storage for two
+~25 MB files is negligible.
