@@ -7,7 +7,7 @@
 set -euo pipefail
 
 BUCKET="${1:?usage: bash setup_cloudshell.sh <bucket-name> [prefix]}"
-PREFIX="${2:-polymarket_reference}"
+PREFIX="${2:-db/polymarket/polymarket_reference}"
 PREFIX="${PREFIX#/}"; PREFIX="${PREFIX%/}"
 STACK=polymarket-strikes-github
 
@@ -35,7 +35,7 @@ Parameters:
     Description: Existing S3 bucket that will hold the strike CSVs.
   Prefix:
     Type: String
-    Default: polymarket_reference
+    Default: db/polymarket/polymarket_reference
     Description: Folder (key prefix) inside the bucket, without slashes at either end.
   GitHubRepo:
     Type: String

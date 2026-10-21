@@ -9,7 +9,7 @@ Parameters:
     Description: Existing S3 bucket that will hold the strike CSVs.
   Prefix:
     Type: String
-    Default: polymarket_reference
+    Default: db/polymarket/polymarket_reference
     Description: Folder (key prefix) inside the bucket, without slashes at either end.
   GitHubRepo:
     Type: String
