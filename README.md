@@ -15,7 +15,7 @@ saved to S3. No VPN, no VM, no stored AWS keys.
 3. Uploads both CSVs back to S3. If the notebook fails, nothing is uploaded and
    GitHub emails you.
 
-Schedule: daily at 00:13 UTC (08:13 SGT). The **Actions → Backfill 5m strikes
+Schedule: daily at 01:00 UTC (09:00 SGT). The **Actions → Backfill 5m strikes
 → Run workflow** button runs it on demand.
 
 Without S3 configured, the workflow still runs and attaches the CSVs to the run

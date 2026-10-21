@@ -1,9 +1,9 @@
 name: Backfill 5m strikes
 
-# Daily at 00:13 UTC (08:13 Singapore). Also runnable from the Actions tab.
+# Daily at 01:00 UTC (09:00 Singapore). Also runnable from the Actions tab.
 on:
   schedule:
-    - cron: "13 0 * * *"
+    - cron: "0 1 * * *"
   workflow_dispatch:
     inputs:
       asset_mode:
