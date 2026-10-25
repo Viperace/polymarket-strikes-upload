@@ -47,7 +47,7 @@ as a downloadable artifact.
    | `S3_BUCKET`    | your bucket name                                         |
 
    Region and folder default to `ap-northeast-2` and
-   `db/polymarket/polymarket_reference`. Override them with the repository
+   `bau/v1/sources/polymarket/polymarket_reference`. Override them with the repository
    *variables* `AWS_REGION` / `S3_PREFIX` if needed (the stack's `Prefix` must
    match). The role only allows read/write under that one prefix, and only for
    workflow runs on this repo's `main` branch.
@@ -55,8 +55,8 @@ as a downloadable artifact.
    run doesn't rebuild ETH from scratch:
 
    ```
-   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\eth_5m_strikes.csv" s3://my-bucket/db/polymarket/polymarket_reference/
-   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\btc_5m_strikes.csv" s3://my-bucket/db/polymarket/polymarket_reference/
+   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\eth_5m_strikes.csv" s3://my-bucket/bau/v1/sources/polymarket/polymarket_reference/
+   aws s3 cp "C:\Wealth Project\db\polymarket\polymarket_reference\btc_5m_strikes.csv" s3://my-bucket/bau/v1/sources/polymarket/polymarket_reference/
    ```
 
 4. Optional: turn on **bucket versioning** to keep every previous version
@@ -65,7 +65,7 @@ as a downloadable artifact.
 ## Pulling the results locally
 
 ```
-aws s3 sync s3://my-bucket/db/polymarket/polymarket_reference/ "C:\Wealth Project\db\polymarket\polymarket_reference" --exclude "*" --include "*_5m_strikes.csv"
+aws s3 sync s3://my-bucket/bau/v1/sources/polymarket/polymarket_reference/ "C:\Wealth Project\db\polymarket\polymarket_reference" --exclude "*" --include "*_5m_strikes.csv"
 ```
 
 ## Cost

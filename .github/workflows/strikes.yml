@@ -27,7 +27,7 @@ env:
   # the CSVs to the run as an artifact instead.
   USE_S3: ${{ secrets.AWS_ROLE_ARN != '' }}
   S3_BUCKET: ${{ secrets.S3_BUCKET }}
-  S3_PREFIX: ${{ vars.S3_PREFIX || 'db/polymarket/polymarket_reference' }}
+  S3_PREFIX: ${{ vars.S3_PREFIX || 'bau/v1/sources/polymarket/polymarket_reference' }}
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
 
 jobs:
